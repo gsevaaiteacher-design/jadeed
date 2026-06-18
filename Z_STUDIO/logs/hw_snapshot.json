@@ -1,0 +1,11 @@
+{
+    "has_gpu": false,
+    "gpu_name": "NONE",
+    "vram_total": 0,
+    "ram_total": 15.71,
+    "cpu_cores": 8,
+    "threads": 16,
+    "os_node": "Z-AI",
+    "compute_mode": "CPU",
+    "integrity_hash": "efb04c5f1fccbdf52cbf8122c5124f1867874c6891005182553b52e460ba9db6"
+}

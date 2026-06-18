@@ -1,0 +1,9 @@
+{
+    "hwid_lock": "CC041B76904833D8A22527186429E5BC",
+    "license_key": "ZST-YAZN02R26QU3D9C70-B2-F45F0A3D",
+    "signature": "3ebb299c030133d64f4275cbb67ede8ad614abd56359a17239faa3ebbe8d3e39",
+    "activation_meta": {
+        "ts": "2026-04-20",
+        "core": "V8-HARDENED"
+    }
+}

@@ -1,0 +1,156 @@
+{
+    "system_identity": {
+        "app_name": "Z-STUDIO",
+        "version": "1.0.0",
+        "core_type": "V8-HARDENED-CORE",
+        "os_target": "windows-x64",
+        "build_status": "STABLE-OFFLINE-HYBRID",
+        "deployment_id": "Z-ALPHA-2026"
+    },
+    "boot_paths": {
+        "root": "__RESOLVED_APP_DIR__",
+        "python": {
+            "core": "embedded_runtime/python_core_pack"
+        },
+        "engine": {
+            "core": "embedded_runtime/llama_runtime_pack",
+            "external": "external_bins/llama_runtime_pack"
+        },
+        "ffmpeg": {
+            "external": "external_bins/ffmpeg"
+        },
+        "tesseract": {
+            "external": "external_bins/Tesseract-OCR"
+        },
+        "bundle": "embedded_runtime/system_dependencies.bundle/system_dependencies.bundle",
+        "external_mounts": {
+            "models": "__RESOLVED_APP_DIR__/external_models",
+            "plugins": "__RESOLVED_APP_DIR__/external_plugins",
+            "voice": "__RESOLVED_APP_DIR__/external_voice"
+        }
+    },
+    "storage_logic": {
+        "core_assets": "__RESOLVED_APP_DIR__/core_assets",
+        "models": {
+            "text_models": {
+                "core": "__RESOLVED_APP_DIR__/core_assets/models/text_models",
+                "external": "__RESOLVED_APP_DIR__/core_assets/models/text_models",
+                "active_model": "zai.gguf",
+                "model_name": "zai.gguf"
+            },
+            "vision_models": {
+                "core": "__RESOLVED_APP_DIR__/core_assets/models/multimodal_models",
+                "external": "__RESOLVED_APP_DIR__/external_models/multimodal_models",
+                "active_model": "vision_model_v1.gguf"
+            },
+            "multimodal_models": {
+                "core": "__RESOLVED_APP_DIR__/core_assets/models/multimodal_models",
+                "external": "__RESOLVED_APP_DIR__/external_models/multimodal_models"
+            },
+            "voice_models": {
+                "core": "__RESOLVED_APP_DIR__/core_assets/models/voice_models",
+                "external": "__RESOLVED_APP_DIR__/external_models/voice_models",
+                "vosk_models": [
+                    "vosk-model-ar-mgb2-0.4",
+                    "vosk-model-en-us-0.22-lgraph",
+                    "vosk-model-small-en-in-0.4"
+                ]
+            }
+        },
+        "internal_models": "__RESOLVED_APP_DIR__/model_storage/default_models",
+        "fallback_models": "__RESOLVED_APP_DIR__/model_storage/fallback_models",
+        "external_registry": "__RESOLVED_APP_DIR__/model_storage/external_path_registry/path_map.json",
+        "registry_loader_mode": {
+            "auto_detect": true,
+            "priority": "core_first",
+            "linked_to_loader": true,
+            "fallback_chain": [
+                "core_assets",
+                "external_registry",
+                "internal_models",
+                "fallback_models"
+            ]
+        },
+        "cache_dir": "__RESOLVED_APP_DIR__/model_storage/temp_cache",
+        "auto_create_registry": true,
+        "compression_enabled": true
+    },
+    "core_assets_structure": {
+        "embeddings": "__RESOLVED_APP_DIR__/core_assets/embeddings",
+        "knowledge": "__RESOLVED_APP_DIR__/core_assets/knowledge",
+        "knowledge_base": "__RESOLVED_APP_DIR__/core_assets/knowledge_base",
+        "memory": {
+            "active": "__RESOLVED_APP_DIR__/core_assets/memory",
+            "permanent": "__RESOLVED_APP_DIR__/core_assets/permanent_memory",
+            "dna": "__RESOLVED_APP_DIR__/core_assets/dna"
+        },
+        "model_cache": "__RESOLVED_APP_DIR__/core_assets/model_cache",
+        "models": "__RESOLVED_APP_DIR__/core_assets/models",
+        "plugins": {
+            "core": "__RESOLVED_APP_DIR__/core_assets/plugins",
+            "external": "__RESOLVED_APP_DIR__/external_plugins"
+        },
+        "vision": "__RESOLVED_APP_DIR__/core_assets/models/multimodal_models",
+        "multimodal": "__RESOLVED_APP_DIR__/core_assets/models/multimodal_models",
+        "text_vision": "__RESOLVED_APP_DIR__/core_assets/models/multimodal_models",
+        "voice": {
+            "vosk": {
+                "core": "__RESOLVED_APP_DIR__/core_assets/models/voice_models",
+                "external": "__RESOLVED_APP_DIR__/external_voice"
+            }
+        }
+    },
+    "external_runtime": {
+        "ffmpeg": "external_bins/ffmpeg",
+        "llama_runtime": "external_bins/llama_runtime_pack",
+        "tesseract": "external_bins/Tesseract-OCR"
+    },
+    "loading_strategy": {
+        "mode": "HYBRID_FULL",
+        "core_first": true,
+        "external_lazy_load": true,
+        "registry_linked": true,
+        "ui_binding_ready": true,
+        "priority_order": [
+            "core_assets",
+            "internal_models",
+            "external_registry",
+            "external_runtime",
+            "fallback_models"
+        ],
+        "user_trigger_required": true
+    },
+    "ui_integration": {
+        "dashboard_sync": true,
+        "live_bridge_required": true,
+        "model_panel_sync": true,
+        "registry_viewer": true,
+        "registry_path_binding": true,
+        "external_loader_button": true,
+        "auto_status_update": true
+    },
+    "security_layer": {
+        "hwid_lock": true,
+        "license_core": "__RESOLVED_APP_DIR__/license_core/key_validator.local",
+        "token_store": "__RESOLVED_APP_DIR__/license_core/activation_token.store",
+        "first_run_activation": true,
+        "integrity_check": "active",
+        "sandbox_boot": true
+    },
+    "execution_params": {
+        "primary_mode": "orchestrator",
+        "safe_mode": "safe_orchestrator",
+        "memory_policy": "auto_optimize",
+        "gpu_policy": "hybrid_detect",
+        "crash_auto_restart": true,
+        "log_level": "production_verbose",
+        "silent_boot": true,
+        "gpu": false,
+        "runtime_mode": "CPU"
+    },
+    "config_version": "1.0.0",
+    "system_sig": "b926fb5121e57d3b76a5270c0524011aa77bf2a6a134cfd5d3e7abf806c8b8b3",
+    "system_meta": {
+        "last_sync_unix": 1779492827.2370284
+    }
+}

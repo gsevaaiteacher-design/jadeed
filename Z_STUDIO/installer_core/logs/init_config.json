@@ -1,0 +1,48 @@
+{
+    "system_identity":  {
+                            "app_name":  "Z-STUDIO",
+                            "version":  "1.0.0",
+                            "core_type":  "V8-HARDENED-CORE",
+                            "os_target":  "windows-x64",
+                            "build_status":  "STABLE-OFFLINE",
+                            "deployment_id":  "Z-ALPHA-2026"
+                        },
+    "boot_paths":  {
+                       "root":  "APP_DIR",
+                       "python":  "APP_DIR/embedded_runtime/python_core_pack",
+                       "engine":  "APP_DIR/embedded_runtime/llama_runtime_pack",
+                       "bundle":  "APP_DIR/embedded_runtime/system_dependencies.bundle"
+                   },
+    "storage_logic":  {
+                          "internal_models":  "APP_DIR/model_storage/default_models",
+                          "fallback_models":  "APP_DIR/model_storage/fallback_models",
+                          "external_registry":  "APP_DIR/model_storage/external_path_registry/path_map.json",
+                          "registry_fallback_chain":  [
+                                                          "external_registry",
+                                                          "internal_models",
+                                                          "fallback_models"
+                                                      ],
+                          "auto_create_registry":  true,
+                          "cache_dir":  "APP_DIR/model_storage/temp_cache",
+                          "compression_enabled":  true
+                      },
+    "security_layer":  {
+                           "hwid_lock":  true,
+                           "license_core":  "APP_DIR/license_core/key_validator.py",
+                           "token_store":  "APP_DIR/license_core/activation_token.store",
+                           "first_run_activation":  true,
+                           "integrity_check":  "active",
+                           "sandbox_boot":  true
+                       },
+    "execution_params":  {
+                             "primary_mode":  "orchestrator",
+                             "safe_mode":  "safe_orchestrator",
+                             "memory_policy":  "auto_optimize",
+                             "gpu_policy":  "hybrid_detect",
+                             "crash_auto_restart":  true,
+                             "log_level":  "production_verbose",
+                             "silent_boot":  true
+                         },
+    "config_version":  "1.0.0",
+    "system_sig":  "b926fb5121e57d3b76a5270c0524011aa77bf2a6a134cfd5d3e7abf806c8b8b3"
+}

@@ -1,0 +1,93 @@
+{
+  "registry_info": {
+    "status": "dynamic_scan_active",
+    "last_sync": "AUTO_RUNTIME",
+    "total_mapped_models": 0,
+    "auto_verify_on_boot": true
+  },
+  "drive_mapping": {
+    "scan_fixed_drives": true,
+    "scan_removable_usb": true,
+    "priority_drive": "AUTO"
+  },
+  "external_paths": {
+    "dynamic_detected_locations": [],
+    "manual_mapped_paths": [],
+    "merge_strategy": "append_unique",
+    "priority": "manual_over_auto"
+  },
+  "auto_scan_directories": [
+    "C:/Z-Studio_Models",
+    "D:/AI_Models",
+    "E:/AI_Models",
+    "F:/Models"
+  ],
+  "model_file_types": [
+    ".gguf",
+    ".bin",
+    ".safetensors",
+    ".pt",
+    ".onnx"
+  ],
+  "scan_limits": {
+    "max_files_per_directory": 5000,
+    "scan_timeout_sec": 60,
+    "scan_depth_limit": 4,
+    "on_timeout": "partial_commit_with_flag"
+  },
+  "scan_execution": {
+    "mode": "controlled_sequential",
+    "max_parallel_scans": 2,
+    "io_priority": "low"
+  },
+  "retry_policy": {
+    "max_retries": 2,
+    "retry_delay_sec": 2
+  },
+  "duplicate_resolution": {
+    "strategy": "priority_drive_first",
+    "fallback": "latest_modified"
+  },
+  "empty_registry_behavior": {
+    "action": "fallback_to_internal",
+    "notify_ui": true
+  },
+  "path_validation": {
+    "check_exists": true,
+    "check_readable": true,
+    "reject_invalid_before_save": true
+  },
+  "file_validation": {
+    "min_size_mb": 1,
+    "max_size_mb": 50000
+  },
+  "scan_logging": {
+    "enabled": true,
+    "log_path": "APP_DIR/logs/registry_scan.log"
+  },
+  "registry_output": {
+    "path": "APP_DIR/model_storage/external_path_registry/path_map.json",
+    "auto_save": true
+  },
+  "registry_lock": {
+    "enabled": true,
+    "lock_file": "APP_DIR/model_storage/external_path_registry/registry.lock"
+  },
+  "safe_write": {
+    "enabled": true,
+    "write_mode": "atomic_temp_swap"
+  },
+  "registry_backup": {
+    "enabled": true,
+    "max_backups": 2
+  },
+  "integrity_cache": {
+    "checksum_verification": "enabled",
+    "auto_repair_links": true,
+    "cache_expiry_hours": 24
+  },
+  "error_handling": {
+    "skip_corrupt_files": true,
+    "log_invalid_paths": true
+  }
+}
