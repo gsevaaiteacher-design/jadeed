@@ -564,7 +564,7 @@ class ExecutionOrchestrator:
             print(f"[DEBUG] Orchestrating via Bus Channel: '{target_channel}'")
             
             # Yahan se Engine ka _bus_inference_entry() trigger hoga
-            print(f"[ORCHESTRATOR_TRACE] Publishing to bus: {task}")
+            print(f"[ORCHESTRATOR_TRACE] Publishing to bus: {packet}")
             print(f"[VERIFY_ORCH] Publishing to Channel 'inference'. Bus Registry: {self.bus._subscribers.keys()}")
             self.bus.publish(target_channel, packet)
             

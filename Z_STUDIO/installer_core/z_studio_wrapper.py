@@ -12,7 +12,7 @@ class ZStudioGuardian:
         self.app_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         self.runtime_exe = os.path.join(self.app_root, "installer_core", "embedded_runtime", "python_core_pack", "python.exe")
         boot1 = os.path.join(self.app_root, "installer_core", "bootloader_core.py")
-boot2 = os.path.join(self.app_root, "installer_core", "runtime_engine", "boot_loader.py")
+        boot2 = os.path.join(self.app_root, "installer_core", "runtime_engine", "boot_loader.py")
         self.state_file = os.path.join(self.app_root, "installer_core", "boot_state.json")
         self.log_file = os.path.join(self.app_root, "logs", "wrapper_audit.log")
         
