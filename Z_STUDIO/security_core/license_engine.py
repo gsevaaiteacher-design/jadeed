@@ -1,28 +1,41 @@
-import os, json, time, ctypes, hashlib, hmac, threading
-from ctypes import wintypes, windll, POINTER, byref, c_byte, c_void_p, Structure, cast, create_unicode_buffer
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os, json, time, hashlib, hmac, threading, logging
 
-MS_PLATFORM_KSP = "Microsoft Platform Crypto Provider"
-NCRYPT_MACHINE_KEY_FLAG = 0x00000020
-NCRYPT_PAD_OAEP_FLAG = 0x00000004
-NCRYPT_IMPL_TYPE_PROPERTY = "Impl Type"
-NCRYPT_LENGTH_PROPERTY = "Length"
-NCRYPT_ALGORITHM_PROPERTY = "Algorithm Name"
-NCRYPT_IMPL_HARDWARE_FLAG = 0x00000001
-ERROR_SUCCESS = 0
-MAX_LICENSE_AGE = 60 * 60 * 24 * 365
+_IS_WINDOWS = os.name == 'nt'
 
-class BCRYPT_OAEP_PADDING_INFO(Structure):
-    _fields_ = [("pszAlgId", wintypes.LPCWSTR), ("pbLabel", c_void_p), ("cbLabel", wintypes.DWORD)]
+if _IS_WINDOWS:
+    import ctypes
+    from ctypes import wintypes, windll, POINTER, byref, c_byte, c_void_p, Structure, cast, create_unicode_buffer
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    MS_PLATFORM_KSP = "Microsoft Platform Crypto Provider"
+    NCRYPT_MACHINE_KEY_FLAG = 0x00000020
+    NCRYPT_PAD_OAEP_FLAG = 0x00000004
+    NCRYPT_IMPL_TYPE_PROPERTY = "Impl Type"
+    NCRYPT_LENGTH_PROPERTY = "Length"
+    NCRYPT_ALGORITHM_PROPERTY = "Algorithm Name"
+    NCRYPT_IMPL_HARDWARE_FLAG = 0x00000001
+    ERROR_SUCCESS = 0
+    MAX_LICENSE_AGE = 60 * 60 * 24 * 365
+
+    class BCRYPT_OAEP_PADDING_INFO(Structure):
+        _fields_ = [("pszAlgId", wintypes.LPCWSTR), ("pbLabel", c_void_p), ("cbLabel", wintypes.DWORD)]
+else:
+    AESGCM = None
+    MAX_LICENSE_AGE = 60 * 60 * 24 * 365
+
+_logger = logging.getLogger("Z-LICENSE_ENGINE")
 
 class ZStudioFinalHardened:
     def __init__(self):
         self.vault_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "titan.vault")
-        self.ncrypt = windll.ncrypt
+        self.ncrypt = getattr(windll, "ncrypt", None) if _IS_WINDOWS else None if _IS_WINDOWS else None
         self._lock = threading.Lock()
-        self._setup_api()
+        if _IS_WINDOWS:
+            self._setup_api()
 
     def _setup_api(self):
+        if not _IS_WINDOWS:
+            return
         self.ncrypt.NCryptOpenStorageProvider.argtypes = [POINTER(wintypes.HANDLE), wintypes.LPCWSTR, wintypes.DWORD]
         self.ncrypt.NCryptOpenKey.argtypes = [wintypes.HANDLE, POINTER(wintypes.HANDLE), wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD]
         self.ncrypt.NCryptCreatePersistedKey.argtypes = [wintypes.HANDLE, POINTER(wintypes.HANDLE), wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD]

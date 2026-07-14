@@ -117,7 +117,13 @@ class ZStudioHWIDLock:
         if not authorized_hwid: return False
         return self.get_current_hwid() == authorized_hwid.strip().upper()
 
-# EXPORT SINGLETON
-hwid_lock = ZStudioHWIDLock()
+# EXPORT SINGLETON (lazy initialization)
+hwid_lock = None
+
+def get_hwid_lock():
+    global hwid_lock
+    if hwid_lock is None:
+        hwid_lock = ZStudioHWIDLock()
+    return hwid_lock
 
 #  ZYNQUAR ATELIER  [PHASE 4 - FILE 1: APEX LOCKED]

@@ -5,7 +5,10 @@ Role: Real-time hardware diagnostics with stabilized baseline.
 """
 
 import psutil
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 import time
 import threading
 import logging # Internal standard for logger_core (File 12) compatibility
@@ -55,7 +58,7 @@ class HealthCore:
                 self.health_metrics["ram_usage"] = psutil.virtual_memory().percent
                 
                 # 2. GPU VRAM tracking (Multi-device aware aggregation)
-                if torch.cuda.is_available():
+                if torch is not None and torch.cuda.is_available():
                     total_allocated = 0
                     total_capacity = 0
                     for i in range(torch.cuda.device_count()):

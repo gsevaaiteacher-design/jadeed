@@ -225,9 +225,10 @@ if __name__ == "__main__":
 
     print("\n--- PHASE 0 TOTAL LOCK | STANDBY FOR PHASE 1 ---")
     import time
-print("🟢 SYSTEM STABLE: Engine Running")
-try:
-    while True:
-        time.sleep(10) # Ye engine ko zinda rakhega
-except KeyboardInterrupt:
-    pass
+if __name__ == "__main__":
+    print("SYSTEM STABLE: Engine Running")
+    try:
+        while True:
+            time.sleep(10)
+    except KeyboardInterrupt:
+        pass

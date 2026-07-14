@@ -2,6 +2,7 @@ import sys
 import os
 import threading
 import re
+import logging
 # =========================
 # ROOT PATH FIX
 # =========================
@@ -30,10 +31,11 @@ try:
     )
 
     from PySide6.QtCore import Qt
+    PYSIDE6_AVAILABLE = True
 
 except Exception as e:
-    print(" PySide6 ERROR:", e)
-    sys.exit(1)
+    PYSIDE6_AVAILABLE = False
+    logging.getLogger("Z-STUDIO-UI").warning("PySide6 not available: %s", e)
 
 # =========================
 # CORE IMPORTS

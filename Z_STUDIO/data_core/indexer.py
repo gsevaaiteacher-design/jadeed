@@ -2,9 +2,15 @@
 #  ROLE: INDUSTRIAL SEMANTIC INDEXER (RETRY-GUARDED + FALLBACK)
 #  OWNER: ZYNQUAR ATELIER (C) 2026 | V8 FINAL HARDENED CORE
 
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 import logging
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 import re
 import warnings
 
@@ -24,7 +30,7 @@ class Indexer:
         self.model_name = model_name
         self._retrying = False #  Retry Guard Flag
         try:
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            self.device = 'cuda' if (torch is not None and torch.cuda.is_available()) else 'cpu'
             self._load_model(self.device)
             logger.info(f"Indexer Active: {model_name} on {self.device.upper()}")
         except Exception as e:
@@ -33,6 +39,8 @@ class Indexer:
 
     def _load_model(self, device):
         """Internal loader for device-specific initialization."""
+        if SentenceTransformer is None:
+            raise ImportError("sentence_transformers not installed")
         self.model = SentenceTransformer(self.model_name, device=device)
         self.dimension = self.model.get_sentence_embedding_dimension()
 

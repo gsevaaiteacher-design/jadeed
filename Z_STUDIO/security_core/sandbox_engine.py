@@ -13,7 +13,7 @@ from pathlib import Path
 class ZStudioSandbox:
     def __init__(self):
         self.VER = "1.0.0"
-        self.workspace = Path(os.getenv('TEMP')) / "zstudio_sandbox"
+        self.workspace = Path(os.getenv('TEMP') or os.getenv('TMPDIR') or '/tmp') / "zstudio_sandbox"
         self._prepare_sandbox()
 
     def _prepare_sandbox(self):

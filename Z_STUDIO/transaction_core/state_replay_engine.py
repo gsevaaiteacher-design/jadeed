@@ -10,7 +10,7 @@ import multiprocessing
 import time
 import json
 import os
-from wal_schema import WALSchema
+from transaction_core.wal_schema import WALSchema
 
 class ReplayError:
     INTEGRITY_FAIL = 101

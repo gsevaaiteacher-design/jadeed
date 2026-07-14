@@ -1,4 +1,4 @@
-from license_engine import license_engine
+from security_core.license_engine import license_engine
 
 # Step 1: Activate (Key create aur encrypt karke dekho)
 print("--- Testing Activation ---")

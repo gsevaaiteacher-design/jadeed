@@ -34,7 +34,8 @@ class ZStudioResourceAdapter:
         """ Optimized Polling Loop (Hooked to Control Bus)."""
         try:
             #  HOOK: Accessing Global Bus
-            from system_core.control_bus import control_bus
+            from system_core.control_bus import ControlBus
+            control_bus = ControlBus()
             
             process = psutil.Process(os.getpid())
             psutil.cpu_percent(interval=None) 
