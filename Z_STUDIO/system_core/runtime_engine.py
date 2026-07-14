@@ -95,10 +95,12 @@ class RuntimeEngine:
         )
 
     def init_core_services(self):
-        import faiss
-        print(f"DEBUG: Faiss loaded from {faiss.__file__}")
+        try:
+            import faiss
+        except ImportError:
+            self.logger.warning("[SYSTEM] FAISS not available. Vector features disabled.")
+            return
         
-        # FAISS index banayein
         self.faiss_index = faiss.IndexFlatL2(384)
         
         #    ,  'faiss'        stage   
@@ -109,11 +111,12 @@ class RuntimeEngine:
         self.bus.stage_service("FAISS_INSTANCE", self.faiss_index)
         
     def build_runtime_registry(self):
-        # 1. Config mangwao
         runtime_config = self.bus.request("CONFIG_RUNTIME_READY")
+        if not isinstance(runtime_config, dict):
+            self.logger.warning("[SYSTEM] Runtime config not available. Skipping registry build.")
+            return
         from pathlib import Path
 
-        # 2. Paths validate karo
         for name, path in runtime_config.items():
             if not Path(path).exists():
                 raise FileNotFoundError(f"Missing Runtime Path: {path}")
@@ -379,9 +382,7 @@ class RuntimeEngine:
             self.logger.info("[SYSTEM_CORE] Memory resources purged. Controller reverted to Standby.")
             return True
         
-# Purana: def create_runtime_engine(): return RuntimeEngine()
-# Naya (Singleton Pattern):
-#runtime_engine = RuntimeEngine()
+runtime_engine = RuntimeEngine()
 
 def get_runtime_engine():
     return runtime_engine

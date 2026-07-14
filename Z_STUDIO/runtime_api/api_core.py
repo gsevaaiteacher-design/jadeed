@@ -11,7 +11,7 @@ import uuid
 from typing import Dict, Any, Optional, Set
 
 #from runtime_api.request_router import request_router
-from runtime_api.execution_manager import manager
+from runtime_api.execution_manager import get_manager
 
 try:
     from logger_core import logger
@@ -76,7 +76,7 @@ class ZStudioAPICore:
 
     def _dispatch_to_router(self, envelope: Dict[str, Any]) -> Dict[str, Any]:
         
-        return manager.router.route(envelope)
+        return get_manager().router.route(envelope)
     
     def _generate_id(self) -> str:
         """Traceable unique ID generation."""

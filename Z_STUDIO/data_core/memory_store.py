@@ -7,9 +7,19 @@ import json
 import uuid
 import datetime
 import threading
-import msvcrt  # Windows OS-level file locking
 from pathlib import Path
 from collections import deque
+
+try:
+    import msvcrt  # Windows OS-level file locking
+    _HAS_MSVCRT = True
+except ImportError:
+    _HAS_MSVCRT = False
+    try:
+        import fcntl  # Unix OS-level file locking
+        _HAS_FCNTL = True
+    except ImportError:
+        _HAS_FCNTL = False
 
 class MemoryStore:
     """
@@ -58,9 +68,11 @@ class MemoryStore:
                 
                 with open(self.current_log, "ab") as f:
                     try:
-                        #  LOCK ENTIRE RANGE (Windows pointer fix)
-                        f.seek(0)
-                        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 0x7fffffff)
+                        if _HAS_MSVCRT:
+                            f.seek(0)
+                            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 0x7fffffff)
+                        elif _HAS_FCNTL:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                         
                         f.seek(0, os.SEEK_END)
                         f.write(entry_bytes)
@@ -70,8 +82,11 @@ class MemoryStore:
                             os.fsync(f.fileno())
                     finally:
                         try:
-                            f.seek(0)
-                            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7fffffff)
+                            if _HAS_MSVCRT:
+                                f.seek(0)
+                                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7fffffff)
+                            elif _HAS_FCNTL:
+                                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
                         except: pass
             return True
         except Exception as e:
@@ -123,24 +138,48 @@ class MemoryStore:
         if not self.snapshot(): return False
         try:
             with self._lock:
-                # Step 1: Open, Lock, and then Close to clear any pending IO
                 with open(self.current_log, "ab") as f:
                     try:
-                        f.seek(0)
-                        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 0x7fffffff)
+                        if _HAS_MSVCRT:
+                            f.seek(0)
+                            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 0x7fffffff)
+                        elif _HAS_FCNTL:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                     finally:
                         try:
-                            f.seek(0)
-                            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7fffffff)
+                            if _HAS_MSVCRT:
+                                f.seek(0)
+                                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7fffffff)
+                            elif _HAS_FCNTL:
+                                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
                         except: pass
                 
-                # Step 2: Now safe to unlink (Handle is closed)
                 self.current_log.unlink(missing_ok=True)
                 self.current_log.touch()
             return True
         except Exception as e:
             print(f"[Z-STORAGE] Compact Failed: {e}")
             return False
+
+    def get_by_id(self, record_id: str) -> dict:
+        """Fetch a single record by its UUID from the append-only log."""
+        if not self.current_log.exists():
+            return None
+        try:
+            with open(self.current_log, "r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        if entry.get("id") == record_id:
+                            return entry.get("content", entry)
+                    except json.JSONDecodeError:
+                        continue
+            return None
+        except Exception as e:
+            print(f"[Z-STORAGE] get_by_id Failed: {e}")
+            return None
 
 if __name__ == "__main__":
     store = MemoryStore()

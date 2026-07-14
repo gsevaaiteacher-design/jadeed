@@ -6,6 +6,8 @@ ROLE: Input Router (Type Detection & Normalization)
 -----------------------------------------------------------------------
 """
 
+import logging
+
 class MultimodalRouter:
     """
      ROLE: Input type detect karna aur sahi handler ko route karna.
@@ -13,8 +15,8 @@ class MultimodalRouter:
     """
 
     def __init__(self):
-        # Blueprint logic: Supported input formats
         self.supported_types = ["text", "image_path", "audio_path", "document_path"]
+        self.logger = logging.getLogger("Z-MULTIMODAL_ROUTER")
 
     def route_input(self, raw_input, force_task=None):
         """

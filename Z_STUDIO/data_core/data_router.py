@@ -23,10 +23,10 @@ class DataRouter:
     - Logic Level: 10/10 (Industrial Protocol).
     - Protocol: Truth Resolution Priority (Hippocampus Path).
     """
-    def __init__(self):
+    def __init__(self, runtime_bus=None):
         try:
             self.memory = MemoryStore()
-            self.vector = VectorDB()
+            self.vector = VectorDB(runtime_bus=runtime_bus)
             self.cache = CacheEngine()
             self.indexer = Indexer()
             logger.info("Z-Router V3: Kernel Locked and Ready.")
@@ -58,7 +58,6 @@ class DataRouter:
             chunks = self.indexer.chunk_text(data["content"])
             vectors = self.indexer.embed(chunks)
             for i, vec in enumerate(vectors):
-                # Unique Vector ID: ParentID_ChunkIndex
                 self.vector.add(f"{data['id']}_{i}", vec)
         except Exception as e:
             logger.warning(f"Router: Semantic indexing bypassed: {e}")
@@ -100,12 +99,9 @@ class DataRouter:
             seen_ids = set()
 
             for hit in hits:
-                # Extract Parent ID (STALLION_01_0 -> STALLION_01)
                 base_id = hit["id"].split("_")[0]
                 if base_id in seen_ids: continue
                 
-                # RECALL PATH: Fetching full record from MemoryStore
-                # [NOTE: get_by_id will be implemented in the next File 1 upgrade]
                 real_data = self.memory.get_by_id(base_id)
                 
                 if real_data:

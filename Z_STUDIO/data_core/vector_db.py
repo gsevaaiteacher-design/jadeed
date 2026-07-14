@@ -4,6 +4,8 @@
 
 from pathlib import Path
 import threading
+import json
+import numpy as np
 
 class VectorDB:
 
@@ -21,8 +23,8 @@ class VectorDB:
         if runtime_bus is None:
             raise RuntimeError("[VECTOR_DB][FATAL] runtime_bus is missing")
 
-        if not hasattr(runtime_bus, "request"):
-            raise RuntimeError("[VECTOR_DB][FATAL] runtime_bus missing request()")
+        if not (hasattr(runtime_bus, "request") or hasattr(runtime_bus, "resolve")):
+            raise RuntimeError("[VECTOR_DB][FATAL] runtime_bus missing request()/resolve()")
 
         self.bus = runtime_bus
 
@@ -53,14 +55,19 @@ class VectorDB:
         # ==============================================================================
         # FAISS BACKEND (BUS ONLY)
         # ==============================================================================
-        self.faiss = self.bus.resolve("FAISS_BACKEND")
+        self.faiss = None
+        if hasattr(self.bus, "resolve"):
+            self.faiss = self.bus.resolve("FAISS_BACKEND")
+        elif hasattr(self.bus, "request"):
+            self.faiss = self.bus.request("FAISS_BACKEND")
 
         if self.faiss is None:
             raise RuntimeError(
                 "[VECTOR_DB][FATAL] FAISS_BACKEND not registered in runtime_bus."
             )
         
-        print(f"[DEBUG] Bus services available: {list(self.bus._services.keys())}")
+        _services = getattr(self.bus, "_services", {})
+        print(f"[DEBUG] Bus services available: {list(_services.keys())}")
 
         # IMPORTANT: FAISS MUST BE MODULE STYLE (NOT DICT)
         if not hasattr(self.faiss, "IndexFlatL2"):
@@ -90,7 +97,7 @@ class VectorDB:
     # ADD VECTOR
     # =========================================================
 
-    def add(self, vector: list, data_id: str) -> bool:
+    def add(self, data_id: str, vector: list) -> bool:
 
         if not vector or len(vector) != self.dimension:
             return False

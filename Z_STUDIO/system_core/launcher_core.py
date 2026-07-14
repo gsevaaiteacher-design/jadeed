@@ -6,16 +6,7 @@
 import os
 import sys
 import glob
-
-def _bootstrap_logging(self):
-    import logging
-    # 'replace'      '?'       
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
-    
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-    root_logger.addHandler(handler)
+import logging
 
 # ---------------------------------------------------------------------
 # STEP 1: DYNAMIC PORTABLE ROOT RESOLUTION (NO DRIVE HARDCODING)
@@ -26,27 +17,32 @@ EMBEDDED = os.path.join(ROOT_DIR, "installer_core", "embedded_runtime", "python_
 
 EMBEDDED_LIB = os.path.join(EMBEDDED, "Lib")
 SITE_PACKAGES = os.path.join(EMBEDDED, "Lib", "site-packages")
-PY_EXE = os.path.join(EMBEDDED, "python.exe")
+
+_IS_WINDOWS = sys.platform == "win32"
+
+if _IS_WINDOWS:
+    PY_EXE = os.path.join(EMBEDDED, "python.exe")
+else:
+    PY_EXE = sys.executable
 
 # ---------------------------------------------------------------------
 # STEP 2: STDLIB INTEGRITY GATE & RECOVERY MODE INTERFACE
 # ---------------------------------------------------------------------
-CRITICAL_BOOTSTRAP_ASSETS = [
-    EMBEDDED_LIB,
-    SITE_PACKAGES,
-    os.path.join(EMBEDDED_LIB, "pkgutil.py"),
-    os.path.join(EMBEDDED_LIB, "site.py"),
-    os.path.join(EMBEDDED_LIB, "encodings", "__init__.py")  # Hard anchor for dynamic character map encoding
-]
+CRITICAL_BOOTSTRAP_ASSETS = []
+if _IS_WINDOWS and os.path.exists(EMBEDDED_LIB):
+    CRITICAL_BOOTSTRAP_ASSETS = [
+        EMBEDDED_LIB,
+        SITE_PACKAGES,
+        os.path.join(EMBEDDED_LIB, "pkgutil.py"),
+        os.path.join(EMBEDDED_LIB, "site.py"),
+        os.path.join(EMBEDDED_LIB, "encodings", "__init__.py")
+    ]
 
-# Physical asset existence validation layer
+# Physical asset existence validation layer (Windows embedded runtime only)
 for asset in CRITICAL_BOOTSTRAP_ASSETS:
     if not os.path.exists(asset):
-        print("\n" + "="*80)
-        print(" ENTERPRISE BOOTSTRAP BREAKDOWN: EMBEDDED DISTRO CORRUPTION DETECTED!")
-        print(f"-> Missing Architecture Dependency: {asset}")
-        print("-> Fallback Log Dump: Writing diagnostic baseline state to core_crash.log")
-        print("="*80 + "\n")
+        _boot_logger = logging.getLogger("Z-STUDIO-BOOT")
+        _boot_logger.error("EMBEDDED DISTRO CORRUPTION: Missing %s", asset)
         try:
             with open(os.path.join(ROOT_DIR, "core_crash.log"), "a") as log:
                 log.write(f"[BOOT_ERROR] Path asset verification failure at runtime: {asset}\n")
@@ -54,70 +50,78 @@ for asset in CRITICAL_BOOTSTRAP_ASSETS:
             pass
         sys.exit(1)
 
-# Execution access validation for local python interpreter layer
-if not (os.path.exists(PY_EXE) and os.access(PY_EXE, os.X_OK)):
-    print(f"\n ENTERPRISE BOOTSTRAP BREAKDOWN: Execution engine binary missing or blocked: {PY_EXE}\n")
-    sys.exit(1)
+# Execution access validation (Windows embedded runtime only)
+if _IS_WINDOWS and os.path.exists(EMBEDDED):
+    if not (os.path.exists(PY_EXE) and os.access(PY_EXE, os.X_OK)):
+        logging.getLogger("Z-STUDIO-BOOT").error("Execution engine binary missing: %s", PY_EXE)
+        sys.exit(1)
 
-# Deterministic version validation for core internal python dynamic link module (*.dll)
-py_dll_match = glob.glob(os.path.join(EMBEDDED, "python*.dll"))
-if not py_dll_match:
-    print(f"\n ENTERPRISE BOOTSTRAP BREAKDOWN: Vital internal Python DLL link target missing inside package pack!\n")
-    sys.exit(1)
+    # DLL validation (Windows only)
+    py_dll_match = glob.glob(os.path.join(EMBEDDED, "python*.dll"))
+    if not py_dll_match:
+        logging.getLogger("Z-STUDIO-BOOT").error("Python DLL missing inside package pack")
+        sys.exit(1)
 
 # ---------------------------------------------------------------------
-# STEP 3: HERMETIC MATRIX PACKING & CONTROLLED PATH FILTERING (FIX 1 & 3)
+# STEP 3: HERMETIC MATRIX PACKING & CONTROLLED PATH FILTERING
 # ---------------------------------------------------------------------
-os.environ["PYTHONHOME"] = EMBEDDED           # Direct lookup map to isolated standard library
-os.environ["PYTHONNOUSERSITE"] = "1"           # Ultimate ban on early global pip / AppData leakage
-os.environ["PYTHONDONTWRITEBYTECODE"] = "1"     # Eliminate local system runtime clutter (.pyc)
 os.environ["Z_STUDIO_ROOT"] = ROOT_DIR
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
-os.environ["PYTHONPATH"] = os.pathsep.join([ROOT_DIR, EMBEDDED_LIB, SITE_PACKAGES])
+if _IS_WINDOWS and os.path.exists(EMBEDDED_LIB):
+    os.environ["PYTHONHOME"] = EMBEDDED
+    os.environ["PYTHONNOUSERSITE"] = "1"
+    os.environ["PYTHONPATH"] = os.pathsep.join([ROOT_DIR, EMBEDDED_LIB, SITE_PACKAGES])
 
-# SYSTEM PATH FILTER SHIELD: Strip third-party application clutter, whitelist only core driver interfaces
-SYSTEM_ROOT = os.environ.get("SystemRoot", "C:\\Windows")
-SYSTEM_32 = os.path.join(SYSTEM_ROOT, "System32")
-SYS_WOW64 = os.path.join(SYSTEM_ROOT, "SysWOW64")
+    # Windows PATH filtering
+    SYSTEM_ROOT = os.environ.get("SystemRoot", "C:\\Windows")
+    SYSTEM_32 = os.path.join(SYSTEM_ROOT, "System32")
+    SYS_WOW64 = os.path.join(SYSTEM_ROOT, "SysWOW64")
 
-whitelisted_system_paths = [SYSTEM_32, SYSTEM_ROOT]
-if os.path.exists(SYS_WOW64):
-    whitelisted_system_paths.append(SYS_WOW64)
+    whitelisted_system_paths = [SYSTEM_32, SYSTEM_ROOT]
+    if os.path.exists(SYS_WOW64):
+        whitelisted_system_paths.append(SYS_WOW64)
 
-# Keep host system paths that directly reference graphics hardware components or VC++ dependencies
-raw_host_paths = os.environ.get("PATH", "").split(os.pathsep)
-filtered_host_paths = [
-    p for p in raw_host_paths 
-    if any(k in p.lower() for k in ["nvidia", "cuda", "vulkan", "opencl", "amd", "intel", "driver"])
-]
+    raw_host_paths = os.environ.get("PATH", "").split(os.pathsep)
+    filtered_host_paths = [
+        p for p in raw_host_paths
+        if any(k in p.lower() for k in ["nvidia", "cuda", "vulkan", "opencl", "amd", "intel", "driver"])
+    ]
 
-# Set the final absolute sealed precedence path list
-os.environ["PATH"] = os.pathsep.join([
-    EMBEDDED,
-    os.path.join(EMBEDDED, "DLLs"),            # Local pre-compiled dynamic bindings first
-    *whitelisted_system_paths,                 # Windows internal execution blocks second
-    *filtered_host_paths                       # Safely restricted isolated hardware acceleration links last
-])
+    os.environ["PATH"] = os.pathsep.join([
+        EMBEDDED,
+        os.path.join(EMBEDDED, "DLLs"),
+        *whitelisted_system_paths,
+        *filtered_host_paths
+    ])
+else:
+    # Linux/Mac: ensure ROOT_DIR is on PYTHONPATH
+    existing_pp = os.environ.get("PYTHONPATH", "")
+    parts = [p for p in existing_pp.split(os.pathsep) if p]
+    if ROOT_DIR not in parts:
+        parts.insert(0, ROOT_DIR)
+    os.environ["PYTHONPATH"] = os.pathsep.join(parts)
 
 # ---------------------------------------------------------------------
-# STEP 4: ABSOLUTE SYS.PATH DETERMINISTIC ARRAY OVERWRITE MODEL (FIX 2)
+# STEP 4: SYS.PATH SETUP
 # ---------------------------------------------------------------------
-# Total exclusion of array collision risks via fixed index array assignment
-sys.path[:] = [
-    EMBEDDED_LIB,
-    SITE_PACKAGES,
-    ROOT_DIR
-]
+if _IS_WINDOWS and os.path.exists(EMBEDDED_LIB):
+    sys.path[:] = [EMBEDDED_LIB, SITE_PACKAGES, ROOT_DIR]
+else:
+    # Linux/Mac: just ensure ROOT_DIR is on the path
+    if ROOT_DIR not in sys.path:
+        sys.path.insert(0, ROOT_DIR)
 
 # ---------------------------------------------------------------------
-# STEP 5: WINDOWS MULTIPROCESS SPAWN HANDSHAKE LAYER PROTECTION
+# STEP 5: MULTIPROCESS SPAWN HANDSHAKE
 # ---------------------------------------------------------------------
 import multiprocessing
 
-multiprocessing.set_executable(PY_EXE)
-sys.executable = PY_EXE
+if _IS_WINDOWS and os.path.exists(PY_EXE):
+    multiprocessing.set_executable(PY_EXE)
+    # Don't overwrite sys.executable on Linux
 
-# Strict check to bound start method assignment gracefully inside parent environment
+# Cross-platform start method
 if multiprocessing.get_start_method(allow_none=True) != "spawn":
     try:
         multiprocessing.set_start_method("spawn")
@@ -594,7 +598,7 @@ class ZStudioLauncher:
         base_dir = self._get_execution_root()
         absolute_model_path = os.path.normpath(os.path.join(base_dir, relative_model_path))
 
-        print("DEBUG PATH:", absolute_target_path)  #    
+        self._trace_log(f"DEBUG PATH: {absolute_model_path}")
         
         if not os.path.exists(absolute_model_path) or os.path.getsize(absolute_model_path) == 0:
             logging.critical(f" INTEGRITY_FAIL: Production model weights missing or truncated at target path: {absolute_model_path}")
@@ -868,7 +872,7 @@ class ZStudioLauncher:
                 # ASLI CHOR KA PATA YAHAN CHALGA
                 import traceback
                 error_details = traceback.format_exc()
-                print(f" ASLI CHOR MIL GAYA: {error_details}")
+                self._trace_log(f"POST 3.1 error: {error_details}")
                 self._trace_log(f"BOOT_FAIL: POST 3.1 - {error_details}")
                 self._rollback_state()
                 return False
@@ -948,22 +952,19 @@ class ZStudioLauncher:
             # =========================================================
             # [DIAGNOSTIC] FAISS VECTOR GATEWAY (ATOMIC CHECK)
             # =========================================================
-            print(f"[DIAGNOSTIC] Engine ignited. Waiting for FAISS registry...")
+            self._trace_log("[POST 5] Engine ignited. Waiting for FAISS registry...")
             import time
             faiss_ready = False
             for i in range(10):
                 val = self.bus.resolve("FAISS_BACKEND")
                 if val is not None:
-                    print(f"[DIAGNOSTIC] FAISS FOUND AT ATTEMPT {i}")
+                    self._trace_log(f"FAISS found at attempt {i}")
                     faiss_ready = True
                     break
-                else:
-                    print(f"[DEBUG] FAISS not yet registered in Bus.")
-                time.sleep(0.5) #         
-            
+                time.sleep(0.5)
+
             if not faiss_ready:
-                print("[DIAGNOSTIC] FATAL: FAISS NOT FOUND EVEN AFTER RETRIES!")
-                self._trace_log(" BOOT_FAIL: FAISS_BACKEND missing from registry.")
+                self._trace_log("BOOT_FAIL: FAISS_BACKEND missing from registry after retries.")
                 self._rollback_state()
                 return False
 
@@ -974,7 +975,7 @@ class ZStudioLauncher:
                 mod_inf = self._import_via_contract("InferenceEngine", paths_matrix.get("inference_engine"))
                 self.inference = mod_inf.InferenceEngine(runtime_bridge=self.bus, runtime_bus=self.bus)
                 self.bus.stage_service("inference", self.inference)
-                print(f"DEBUG: Checking if registry exists in Bus: {self.bus.resolve('registry')}")
+                self._trace_log(f"Checking registry in Bus: {self.bus.resolve('registry')}")
                 
                 if hasattr(self.inference, "initialize_db"): self.inference.initialize_db()
                 self.registry_status["POST_5_5"] = "READY"
@@ -984,15 +985,14 @@ class ZStudioLauncher:
                 return False
             
             # --- DEEP DIAGNOSTIC PROBE ---
-            print(f"DEBUG_DIAGNOSTIC: Bus Object Memory Address: {id(self.bus)}")
-            print(f"DEBUG_DIAGNOSTIC: Full Bus Registry Content: {list(self.bus._services.keys())}")
+            self._trace_log(f"Bus Object Memory Address: {id(self.bus)}")
+            self._trace_log(f"Full Bus Registry Content: {list(self.bus._services.keys())}")
 
             # Check specific key existence (Case-sensitive)
             target_keys = ["memory_budget_controller", "resource_guard", "scheduler"]
             for key in target_keys:
                 val = self.bus._services.get(key)
-                print(f"DIAGNOSTIC: Key '{key}' status -> Found: {key in self.bus._services} | Value is None: {val is None}")
-                # ------------------------------
+                self._trace_log(f"Key '{key}' status -> Found: {key in self.bus._services} | Value is None: {val is None}")
             
 
             # =========================================================
@@ -1010,8 +1010,8 @@ class ZStudioLauncher:
                     self._rollback_state()
                     return False
                 
-            print(f"DEBUG: Bus services keys: {list(self.bus._services.keys())}")
-            print(f"DEBUG: Resolve output: {self.bus.resolve('memory_budget_controller')}")
+            self._trace_log(f"Bus services keys: {list(self.bus._services.keys())}")
+            self._trace_log(f"Resolve output: {self.bus.resolve('memory_budget_controller')}")
 
             # =========================================================
            # =========================================================
@@ -1039,7 +1039,7 @@ class ZStudioLauncher:
                 
                 # 3. Explicit Binding/Injection
                 if hasattr(self.orchestrator, "bind_service"):
-                    print(f"[DEBUG] Binding registry with: {type(self.inference)}")
+                    self._trace_log(f"Binding registry with: {type(self.inference)}")
                     self.orchestrator.bind_service("registry", self.inference)
                     self.orchestrator.bind_service("memory_budget_controller", mem_inst)
                     self.orchestrator.bind_service("resource_guard", guard_inst)
@@ -1216,12 +1216,10 @@ class ZStudioLauncher:
 
             #  AUDIT FIX: Modules  Bus       
 
-            print("\n" + "="*40)
-            print("--- KERNEL BUS DIAGNOSTICS ---")
-            print(f"ID launcher.bus: {id(self.bus)}")
-            print(f"ID inference.bus: {id(self.inference.bus)}")
-            print(f"ID orchestrator.bus: {id(self.orchestrator.bus)}")
-            print("="*40 + "\n")
+            self._trace_log("--- KERNEL BUS DIAGNOSTICS ---")
+            self._trace_log(f"ID launcher.bus: {id(self.bus)}")
+            self._trace_log(f"ID inference.bus: {id(self.inference.bus)}")
+            self._trace_log(f"ID orchestrator.bus: {id(self.orchestrator.bus)}")
 
             self._trace_log("SYSTEM AUTHORITY: Contract Locked. Modules operating via Bus communication.")
                 

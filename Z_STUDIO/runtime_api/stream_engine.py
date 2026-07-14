@@ -75,9 +75,9 @@ class ZStudioStreamEngine:
             try:
                 from system_core.control_bus import control_bus
                 control_bus.publish("STREAM_ERROR", {"request_id": request_id, "status": "TIMEOUT"})
-            except:
+            except Exception:
                 pass
-           
+
             logger.error(f"[ZYNQUAR STREAM] TIMEOUT EXCEEDED: {request_id}")
         finally:
             # FIX: Ensure cleanup happens only once and safely

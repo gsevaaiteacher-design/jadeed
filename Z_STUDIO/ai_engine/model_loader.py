@@ -10,6 +10,7 @@ import os
 import threading
 import sys
 import importlib
+import logging
 
 class ModelLoader:
     """
@@ -23,6 +24,8 @@ class ModelLoader:
         self.runtime = runtime_bridge
         self.active_handles = {}
         self._lock = threading.Lock()
+        self.bus = getattr(runtime_bridge, 'bus', None) if runtime_bridge else None
+        self.logger = logging.getLogger("Z-MODEL_LOADER")
 
     def load_ai_dependencies(self):
         # 1. Bus se Registry mangwao
@@ -188,9 +191,10 @@ class ModelLoader:
                 source_tag = "LIVE_UI" if (absolute_model_path and final_path == absolute_model_path) else "CONFIG_JSON"
                 
                 self.active_handles[m_id_safe] = {
-                    "handle": model_object,
+                    "handle": handle,
                     "path": final_path,
-                    "device": target_device
+                    "device": target_device,
+                    "source": source_tag
                 }
                 
                 print(f" [SUCCESS] {m_id_safe} ONLINE | HANDLE ID: {hex(id(handle))}")
